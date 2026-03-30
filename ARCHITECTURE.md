@@ -167,13 +167,11 @@ flowchart TD
     SelectTemp --> SaveSettings[Сохранить настройки\nв user_settings.json]
     SaveSettings --> SetDefaultMode[Установить режим\nпо умолчанию: assistant]
     SetDefaultMode --> Confirm[Показать подтверждение\nс итоговыми настройками]
-    Confirm --> End([Готов к работе])
-
-    Confirm --> ChangeMode{Пользователь\nхочет сменить режим?}
-    ChangeMode -- Да --> ShowModes[/mode — показать\nсписок ролей]
+    Confirm --> ChangeMode{Сменить\nрежим?}
+    ChangeMode -- Да --> ShowModes[Команда mode —\nпоказать список ролей]
     ShowModes --> SelectMode[Выбрать роль]
     SelectMode --> ClearHistory[Очистить историю\nдиалога]
-    ClearHistory --> End
+    ClearHistory --> End([Готов к работе])
     ChangeMode -- Нет --> End
 ```
 

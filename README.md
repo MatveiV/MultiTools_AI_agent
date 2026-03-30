@@ -1,36 +1,43 @@
-# AI Agent MultiRole Telegram Bot
+# AI Agent MultiRole Video Bot
 
-Telegram-бот с поддержкой нескольких AI-провайдеров, памятью диалога, сменой ролей, генерацией изображений и видео.
+Telegram-бот с поддержкой 5 AI-провайдеров, памятью диалога, 8 ролями, генерацией изображений и видео.
 
----
+[![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://python.org)
+[![aiogram](https://img.shields.io/badge/aiogram-3.x-green)](https://aiogram.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 > 📐 Архитектурная документация с диаграммами C4, BPMN и UML — в файле [ARCHITECTURE.md](ARCHITECTURE.md)
 
+---
+
 ## Возможности
 
-- Три AI-провайдера: **Z.AI**, **ProxyAPI (OpenAI)**, **GenAPI**
-- Выбор модели и температуры при первом запуске и через `/settings`
+- **5 AI-провайдеров:** Z.AI, ProxyAPI (OpenAI), GenAPI, Cerebras, HuggingFace
+- Выбор провайдера, модели и температуры при первом запуске и через `/settings`
 - Память диалога — последние 10 пар сообщений на пользователя (сохраняется между перезапусками)
-- 5 режимов (ролей): помощник, разработчик, писатель, учитель, аналитик — легко расширяются через `prompts.json`
-- Генерация изображений (`/image`) — DALL·E, GPT-Image-1, GLM-Image, Flux, Recraft и др.
+- **8 ролей:** помощник, разработчик, писатель, учитель, аналитик, системный архитектор, UI/UX дизайнер, Senior Developer
+- Генерация изображений (`/image`) — DALL·E, GPT-Image-1, GLM-Image, FLUX, Recraft, Kling и др.
 - Генерация видео (`/video`) — Sora, CogVideoX-3, Kling, LTX, PixVerse и др.
 - Подсчёт стоимости каждого запроса в рублях (курс ЦБ РФ)
-- Логирование в консоль и файл `bot.log` с ротацией
+- Логирование в консоль и файл `bot.log` с ротацией (5 МБ × 3 файла)
+- Длинные ответы автоматически разбиваются на части (лимит Telegram 4096 символов)
 
 ---
 
 ## Структура проекта
 
 ```
-├── main.py           # Точка входа, все хендлеры бота
-├── config.py         # Провайдеры, модели, константы
-├── memory.py         # Хранение истории диалогов и настроек
-├── prompts.json      # Системные промпты (роли)
-├── requirements.txt  # Зависимости
-├── .env              # Ключи API (не коммитить!)
-├── memory.json       # Автосоздаётся: история диалогов
+├── main.py            # Точка входа: хендлеры, FSM, роутинг к провайдерам
+├── config.py          # Провайдеры, модели, цены токенов, константы
+├── memory.py          # История диалогов и настройки пользователей (JSON)
+├── prompts.json       # Системные промпты для ролей
+├── requirements.txt   # Зависимости Python
+├── ARCHITECTURE.md    # Диаграммы C4, BPMN, UML
+├── .env               # Ключи API (не коммитить!)
+├── .gitignore
+├── memory.json        # Автосоздаётся: история диалогов
 ├── user_settings.json # Автосоздаётся: настройки пользователей
-└── bot.log           # Автосоздаётся: лог бота
+└── bot.log            # Автосоздаётся: лог бота
 ```
 
 ---
@@ -41,13 +48,13 @@ Telegram-бот с поддержкой нескольких AI-провайде
 
 ```bash
 # 1. Клонировать репозиторий
-git clone https://github.com/your/repo.git
-cd repo
+git clone https://github.com/MatveiV/MultiTools_AI_agent.git
+cd MultiTools_AI_agent
 
 # 2. Установить зависимости
 pip install -r requirements.txt
 
-# 3. Заполнить .env (см. раздел ниже)
+# 3. Создать .env и заполнить ключи (см. раздел ниже)
 
 # 4. Запустить бота
 python main.py
@@ -58,18 +65,24 @@ python main.py
 ## Настройка .env
 
 ```env
-# Токен Telegram-бота (получить у @BotFather)
+# Telegram Bot (получить у @BotFather)
 BOT_TOKEN=your_telegram_bot_token
 
 # Z.AI — https://api.z.ai
 ZAI_API_KEY=your_zai_key
 
-# ProxyAPI — https://proxyapi.ru
+# ProxyAPI — https://proxyapi.ru (OpenAI через российский прокси)
 PROXY_API_KEY=your_proxyapi_key
 
-# Cerebras — https://cloud.cerebras.ai
+# GenAPI — https://gen-api.ru
+GEN_API_KEY=your_genapi_key
+
+# Cerebras — https://cloud.cerebras.ai (есть free tier)
 CEREBRAS_API_KEY=your_cerebras_key
 
+# HuggingFace — https://huggingface.co/settings/tokens
+# fine-grained token с разрешением "Make calls to Inference Providers"
+HF_TOKEN=your_hf_token
 ```
 
 Нужен только тот ключ, провайдера которого планируешь использовать.
@@ -80,9 +93,9 @@ CEREBRAS_API_KEY=your_cerebras_key
 
 | Команда | Описание |
 |---|---|
-| `/start` | Первый запуск, выбор провайдера/модели/температуры |
+| `/start` | Первый запуск, выбор провайдера / модели / температуры |
 | `/settings` | Изменить провайдера, модель или температуру |
-| `/mode` | Сменить роль ИИ (сбрасывает историю) |
+| `/mode` | Сменить роль ИИ (сбрасывает историю диалога) |
 | `/reset` | Очистить историю диалога |
 | `/image` | Сгенерировать изображение |
 | `/video` | Сгенерировать видео |
@@ -92,9 +105,9 @@ CEREBRAS_API_KEY=your_cerebras_key
 
 ## Провайдеры и модели
 
-### Z.AI
+### 1. Z.AI
 
-**Текстовые / мультимодальные LLM**
+Ключ: [api.z.ai](https://api.z.ai) → `ZAI_API_KEY`
 
 | Модель | Бесплатно | Описание |
 |---|:---:|---|
@@ -108,14 +121,15 @@ CEREBRAS_API_KEY=your_cerebras_key
 | GLM-4.5V | — | Vision: анализ изображений, видео, GUI-агенты |
 | GLM-4.6V | — | Vision: понимание изображений + Function Calling |
 
-**Изображения:** GLM-Image (text-to-image)  
+**Изображения:** GLM-Image  
 **Видео:** CogVideoX-3 (text/image-to-video, до 4K, с аудио)
 
 ---
 
-### ProxyAPI (OpenAI)
+### 2. ProxyAPI (OpenAI)
 
-**Текстовые LLM**
+OpenAI-модели через российский прокси без VPN.  
+Ключ: [proxyapi.ru](https://proxyapi.ru) → `PROXY_API_KEY`
 
 | Модель | Описание |
 |---|---|
@@ -125,28 +139,27 @@ CEREBRAS_API_KEY=your_cerebras_key
 | GPT-4o Mini | Мультимодальный, быстрый. Чат, изображения |
 | GPT-4o | Мультимодальный флагман. Текст, код, зрение |
 
-**Изображения:** DALL·E 2, DALL·E 3, GPT-Image-1 (высокое качество)  
+**Изображения:** DALL·E 2, DALL·E 3, GPT-Image-1  
 **Видео:** Sora, Sora-2 (до 4K, 90 сек)
 
 ---
 
-### GenAPI
+### 3. GenAPI
 
-**Текстовые LLM**
+Агрегатор моделей с поддержкой оплаты картами РФ.  
+Ключ: [gen-api.ru](https://gen-api.ru) → `GEN_API_KEY`
 
 | Модель | Описание |
 |---|---|
-| GPT-4.1 Mini | Быстрый и экономичный GPT-4.1 для повседневных задач |
-| GPT-4.1 | Флагман OpenAI. Сложный код, длинный контекст |
-| GPT-5.4 | Топ OpenAI. Глубокий анализ, сложные инструкции |
-| GPT-5.4 Mini | GPT-5.4 облегчённый. Быстро и качественно |
-| GPT-4o | Мультимодальный флагман. Текст, код, зрение |
+| GPT-4.1 Mini / GPT-4.1 | OpenAI. Код, длинный контекст |
+| GPT-5.4 / GPT-5.4 Mini | Топ OpenAI. Глубокий анализ |
+| GPT-4o | Мультимодальный флагман |
 | Claude Sonnet 4.5 | Anthropic. Длинные тексты, нюансированный стиль |
-| Gemini 2.5 Flash | Google. Быстрый, мультимодальный, длинный контекст |
-| Gemini 3.1 Flash Lite | Google. Самый дешёвый Gemini 3.1, высокая скорость |
-| DeepSeek Chat | Китайская модель. Код и чат по низкой цене |
-| DeepSeek R1 | Reasoning-модель. Математика, логика, сложный анализ |
-| GLM-5 | Z.AI топ-модель. Код, архитектура, агентные задачи |
+| Gemini 2.5 Flash | Google. Быстрый, мультимодальный |
+| Gemini 2.5 Flash Lite | Google. Самый дешёвый Gemini 2.5 |
+| Gemini 3 Flash | Google. Frontier-класс по цене Flash |
+| DeepSeek Chat / R1 | Код, чат, reasoning по низкой цене |
+| GLM-5 | Z.AI топ-модель |
 | Qwen 3.5 | Alibaba. Длинный контекст, многоязычность |
 
 **Изображения:** GLM-Image, Flux 2 Klein, Recraft v4 Pro, Qwen Image 2/Max, Seedream v5 Lite, Nano Banana 2, Kling Image V3, Hunyuan Image V3, Grok Imagine Image, FireRed Image Edit  
@@ -154,61 +167,48 @@ CEREBRAS_API_KEY=your_cerebras_key
 
 ---
 
-### Cerebras
+### 4. Cerebras
 
-Самый быстрый инференс в мире — до 3000 tok/s на собственных чипах WSE.  
-Ключ: [cloud.cerebras.ai](https://cloud.cerebras.ai) → API Keys → `CEREBRAS_API_KEY` в `.env`  
-Есть бесплатный tier (Llama 3.1 8B).
+Самый быстрый инференс в мире — до 3000 tok/s на чипах WSE. Есть бесплатный tier.  
+Ключ: [cloud.cerebras.ai](https://cloud.cerebras.ai) → `CEREBRAS_API_KEY`
 
 | Модель | ID | Скорость | Бесплатно | Описание |
 |---|---|---|:---:|---|
 | Llama 3.1 8B | `llama3.1-8b` | ~2200 tok/s | ✅ | Быстрый и бесплатный. Чат, простые задачи |
-| Qwen 3 235B | `qwen-3-235b` | ~1400 tok/s | — | Мощная модель Alibaba. Код, анализ (Preview) |
+| Qwen 3 235B | `qwen-3-235b-a22b-instruct-2507` | ~1400 tok/s | — | Мощная MoE-модель Alibaba. Код, анализ |
 | GPT OSS 120B | `gpt-oss-120b` | ~3000 tok/s | — | OpenAI open-source 120B. Самый быстрый |
-| GLM-4.7 (ZAI) | `glm-4.7` | ~1000 tok/s | — | Z.AI GLM-4.7 через Cerebras (Preview) |
+| Llama 3.3 70B | `llama-3.3-70b` | ~2100 tok/s | — | Мощный Llama для сложных задач |
 
 ---
 
-### HuggingFace Inference Providers
+### 5. HuggingFace Inference Providers
 
-Роутер поверх 18+ провайдеров (Groq, Together, Novita, SambaNova, Fireworks и др.) — единый API, автовыбор провайдера.  
-Ключ: [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) → fine-grained token с разрешением "Make calls to Inference Providers" → `HF_TOKEN` в `.env`
+Роутер поверх 18+ провайдеров (Groq, Together, Novita, SambaNova и др.).  
+Ключ: [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) → fine-grained token с разрешением "Make calls to Inference Providers" → `HF_TOKEN`
 
 Суффиксы к model ID: `:fastest` — максимальная скорость, `:cheapest` — минимальная цена.
 
-| Модель | ID | Описание |
-|---|---|---|
-| Llama 3.1 8B | `meta-llama/Llama-3.1-8B-Instruct:cheapest` | Быстрый и дешёвый. Чат, простые задачи |
-| Llama 3.3 70B | `meta-llama/Llama-3.3-70B-Instruct:fastest` | Мощный Llama 3.3. Код, анализ, 131k контекст |
-| GPT OSS 120B | `openai/gpt-oss-120b:fastest` | OpenAI open-source 120B. Высокая скорость |
-| GPT OSS 20B | `openai/gpt-oss-20b:cheapest` | OpenAI open-source 20B. Самый дешёвый |
-| DeepSeek V3.2 | `deepseek-ai/DeepSeek-V3.2:cheapest` | Код, рассуждения, низкая цена |
-| DeepSeek R1 | `deepseek-ai/DeepSeek-R1:fastest` | Reasoning-модель. Математика, логика |
-| Qwen 3 235B | `Qwen/Qwen3-235B-A22B-Instruct-2507:cheapest` | Мощная Qwen 3 MoE. Код, многоязычность |
-| Qwen 3 32B | `Qwen/Qwen3-32B:fastest` | Баланс скорости и качества |
-| Kimi K2.5 | `moonshotai/Kimi-K2.5:cheapest` | Moonshot. Длинный контекст 262k |
-| GLM-5 | `zai-org/GLM-5:cheapest` | Z.AI GLM-5. Код, агентные задачи |
-| Llama 4 Maverick | `meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8:cheapest` | 1M контекст, мультимодальный |
+| Модель | Описание |
+|---|---|
+| `meta-llama/Llama-3.1-8B-Instruct:cheapest` | Быстрый и дешёвый. Чат, простые задачи |
+| `meta-llama/Llama-3.3-70B-Instruct:fastest` | Мощный Llama 3.3. Код, анализ |
+| `openai/gpt-oss-120b:fastest` | OpenAI open-source 120B |
+| `openai/gpt-oss-20b:cheapest` | OpenAI open-source 20B. Самый дешёвый |
+| `deepseek-ai/DeepSeek-V3.2:cheapest` | Код, рассуждения, низкая цена |
+| `deepseek-ai/DeepSeek-R1:fastest` | Reasoning-модель |
+| `Qwen/Qwen3-235B-A22B-Instruct-2507:cheapest` | Мощная Qwen 3 MoE |
+| `Qwen/Qwen3-32B:fastest` | Баланс скорости и качества |
+| `moonshotai/Kimi-K2.5:cheapest` | Длинный контекст 262k |
+| `zai-org/GLM-5:cheapest` | Z.AI GLM-5 |
+| `meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8:cheapest` | 1M контекст, мультимодальный |
 
 **Изображения** (через `huggingface_hub`): FLUX.1-dev, FLUX.1-schnell, Stable Diffusion 3.5 Large
 
 ---
 
-## Добавление новых ролей
+## Роли (режимы)
 
-Открой `prompts.json` и добавь новый объект в `prompts`:
-
-```json
-"coder": {
-  "name": "Senior Developer",
-  "description": "Пишет production-ready код.",
-  "system_prompt": "Ты — senior-разработчик. Пиши чистый, хорошо документированный код."
-}
-```
-
-Перезапуск бота не нужен — промпты загружаются при старте.
-
-Доступные роли по умолчанию:
+Переключаются командой `/mode`. При смене роли история диалога сбрасывается.
 
 | Ключ | Название | Назначение |
 |---|---|---|
@@ -217,18 +217,42 @@ CEREBRAS_API_KEY=your_cerebras_key
 | `writer` | Редактор текстов | Статьи, посты, описания |
 | `teacher` | Учитель | Объяснение сложных тем простыми словами |
 | `analyst` | Аналитик | Анализ данных, принятие решений |
-| `architect` | Системный архитектор | Проектирование систем, выбор технологий, архитектурные решения |
-| `ui_designer` | UI/UX Дизайнер | Проектирование интерфейсов, usability, UX-паттерны |
+| `architect` | Системный архитектор | Проектирование систем, выбор технологий |
+| `ui_designer` | UI/UX Дизайнер | Проектирование интерфейсов, usability |
+| `senior_dev` | Senior Developer | Production-ready код, code review, best practices |
+
+Добавить новую роль — отредактировать `prompts.json`:
+
+```json
+"my_role": {
+  "name": "Моя роль",
+  "description": "Краткое описание.",
+  "system_prompt": "Ты — ..."
+}
+```
 
 ---
 
 ## Логирование
 
-Логи пишутся одновременно в консоль и файл `bot.log`.  
-Ротация: максимум 5 МБ на файл, хранится 3 последних файла (`bot.log`, `bot.log.1`, `bot.log.2`).
+Логи пишутся одновременно в консоль и `bot.log`.  
+Ротация: 5 МБ × 3 файла (`bot.log`, `bot.log.1`, `bot.log.2`).
 
-Уровень логирования можно изменить в `main.py`:
+Изменить уровень в `main.py`:
 ```python
-logging.basicConfig(level=logging.DEBUG, ...)  # подробнее
+logging.basicConfig(level=logging.DEBUG, ...)   # подробнее
 logging.basicConfig(level=logging.WARNING, ...) # только ошибки
+```
+
+---
+
+## Зависимости
+
+```
+aiogram>=3.7.0
+openai>=1.30.0
+python-dotenv>=1.0.0
+aiohttp>=3.9.0
+google-auth>=2.29.0
+huggingface_hub>=0.24.0
 ```

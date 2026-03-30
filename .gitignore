@@ -1,0 +1,30 @@
+# Секреты
+.env
+
+# Данные пользователей (генерируются при запуске)
+memory.json
+user_settings.json
+
+# Логи
+bot.log
+bot.log.*
+
+# Сгенерированные медиафайлы
+*.mp4
+image.png
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+
+# Виртуальное окружение
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
